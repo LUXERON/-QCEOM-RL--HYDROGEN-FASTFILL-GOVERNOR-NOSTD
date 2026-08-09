@@ -1,31 +1,60 @@
 # STM32N657 Physical Run — H₂ Fast-Fill Map Executor
 
-**Status: REBUILT AND STAGED (second image), NOT YET EXECUTED ON
+**Status: REBUILT AND STAGED (third image), NOT YET EXECUTED ON
 SILICON.** The board is a shared resource and board access is
 coordinated by the lead dev, so this harness stops at the built
 artifact. Everything below is ready to run verbatim.
 
-> **The measured-result section at the bottom of this file is
-> SUPERSEDED.** A 2026-08-09 estate-wide audit found that the params
-> hash guarded the physics but not the **codec**: the image is a bare
-> action-index byte per state, so re-basing a band grid at constant band
-> count would produce a same-length image with an unchanged hash that
-> misindexes every lookup. This harness already hashed its action tiers
-> — the best-covered case in the estate — but not the state band
-> lattice. `GAS_BASE_C`, `GAS_BAND_C`, `LIN_BASE_C`, `LIN_BAND_C` and
-> the band counts are now hashed too.
+> **BOTH measured-result sections at the bottom of this file are now
+> SUPERSEDED.** They are kept in full — they were real runs — but neither
+> validates what is currently in `mailbox_burn.bin`.
 >
-> | Field | Previous image | Current image |
-> |---|---|---|
-> | Tank hash (header offset 16) | `0xB4A7CF3CCB6D74A4` | **`0x0723DA1CCDC8BB94`** |
-> | Stale-hash demo constant | `0xAF1C0A6A672DB2E8` | **`0x007E72F5B2948CE3`** |
-> | Image CRC32 (mailbox word [6]) | `0x0CD9D0FD` | **`0xE3E6A21E`** |
-> | Map fingerprint (words [4,5]) | `0xA0954AB04324380D` | **unchanged** |
+> **Second image, 2026-08-09 — the codec pass.** An estate-wide audit
+> found the params hash guarded the physics but not the **codec**: the
+> image is a bare action-index byte per state, so re-basing a band grid
+> at constant band count would produce a same-length image with an
+> unchanged hash that misindexes every lookup. This harness already
+> hashed its action tiers — the best-covered case in the estate — but not
+> the state band lattice, so `GAS_BASE_C`, `GAS_BAND_C`, `LIN_BASE_C`,
+> `LIN_BAND_C` and the band counts were added.
 >
-> The solved map did not change — only its provenance binding, and
-> therefore the image header and CRC. Host parity 5/5 and QEMU
-> mps3-an547 4/4 have been re-run on the new image. **The lead developer
-> must re-flash `mailbox_burn.bin` and re-run.**
+> **Third image, 2026-08-09 — the L30 omission guard.** That codec pass
+> was a hand-maintained list, and it was **eight constants short on the
+> physics side**. `tank_hash` did not cover the equation-of-state and
+> caloric group at all:
+>
+> `R_U` · `M_H2` · `CV0` · `CP0` · `P_NWP` · `T_REF_SOC_K` ·
+> `RESIDUAL_SOC` · `DT_S`
+>
+> Three of those — `R_U`, `P_NWP`, `T_REF_SOC_K` — jointly define
+> `n_full()`, i.e. **what "100 % SoC" means**. Revising any of them moves
+> the fill target itself, so a re-declared map would aim at a different
+> fill while every fielded image kept validating. `RESIDUAL_SOC` sets the
+> start state the map is solved from; `DT_S` is the step every cell is
+> characterized at.
+>
+> Found by a **mechanical coverage check**
+> (`every_declared_model_constant_is_hashed`), not by the pinned-hash
+> test, which was green throughout. The two fail on different things: a
+> pin catches a change to a constant the hash already covers, and is
+> structurally blind to one it never covered.
+>
+> | Field | First image | Second image | **Current (third)** |
+> |---|---|---|---|
+> | Tank hash (header offset 16) | `0xB4A7CF3CCB6D74A4` | `0x0723DA1CCDC8BB94` | **`0x6F9F25AC945C4600`** |
+> | Stale-hash demo constant | `0xAF1C0A6A672DB2E8` | `0x007E72F5B2948CE3` | **`0xABB0154F156D8F13`** |
+> | Image CRC32 (mailbox word [6]) | `0x0CD9D0FD` | `0xE3E6A21E` | **`0x2984F799`** |
+> | Map fingerprint (words [4,5]) | `0xA0954AB04324380D` | unchanged | **unchanged** |
+>
+> The solved map has never changed across all three images — only its
+> provenance binding, and therefore the header and CRC. Host 21/21, NOSTD
+> host 5/5 and QEMU mps3-an547 4/4 re-run on the new image. **The lead
+> developer must re-flash `mailbox_burn.bin` and re-run.**
+>
+> ⚠️ **Read word [6], not words [4,5], to tell a fresh board from a stale
+> one.** The map fingerprint is identical on all three images, so a board
+> still holding an older image reports a *correct* fingerprint and looks
+> like a pass. Only the CRC32 distinguishes them: expect **`0x2984F799`**.
 
 ## What is staged
 
@@ -73,7 +102,7 @@ STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -q -r32 0x34178000 56
 | [3] | `+0x0C` | tests failed | **0** |
 | [4] | `+0x10` | map fingerprint, low word | `0x4324380D` |
 | [5] | `+0x14` | map fingerprint, high word | `0xA0954AB0` |
-| [6] | `+0x18` | image CRC32 recomputed on silicon | `0xE3E6A21E` |
+| [6] | `+0x18` | image CRC32 recomputed on silicon | **`0x2984F799`** <- the freshness word |
 | [7] | `+0x1C` | `burn_and_accept` DWT cycles | — |
 | [8] | `+0x20` | `refusals` DWT cycles | — |
 | [9] | `+0x24` | `lookup_surface` DWT cycles | — |
@@ -141,7 +170,14 @@ these are real cycle counts.
 
 ---
 
-## RE-VERIFIED ON SILICON AFTER REMEDIATION — 2026-08-09
+## RE-VERIFIED ON SILICON AFTER REMEDIATION — 2026-08-09 — **SUPERSEDED**
+
+> **Pertains to the SECOND image** (tank hash `0x0723DA1CCDC8BB94`,
+> image CRC32 `0xE3E6A21E`). Real, kept in full, and no longer a
+> validation of what is in `mailbox_burn.bin` — the L30 omission guard
+> found eight unhashed equation-of-state and caloric constants after this
+> run and moved the header hash and CRC again. The map fingerprint is
+> unchanged. Append a fresh measured section after re-running.
 
 The gate-evaluability audit produced code changes to this harness, so
 the image above was superseded and the board was re-run. Measured:
@@ -162,3 +198,30 @@ map — so the table fingerprint is identical before and after, and a
 board still holding the *old* image would report a correct fingerprint
 and look like a pass. The image CRC32 is the field that distinguishes
 them, and it was checked on every one.
+
+---
+
+## PENDING RE-RUN — third image, 2026-08-09
+
+Staged, not executed. The L30 omission guard found eight unhashed
+equation-of-state and caloric constants and moved the header hash and
+CRC a third time. The lead developer owns the board; this agent stopped
+at the built artifact.
+
+| Field | Expected on the fresh image |
+|---|---|
+| magic `QH2F` | `0x46324851` |
+| status | `2` = all passed |
+| passed / failed | `4` / `0` |
+| map fingerprint [4,5] | `0xA0954AB04324380D` (**unchanged — cannot prove freshness**) |
+| **image CRC32 [6]** | **`0x2984F799`** (**this is the freshness proof**) |
+| progress [11] / marker [12] | `4` / `6` |
+| band decisions walked [13] | `15` |
+
+If word [6] reads `0xE3E6A21E` or `0x0CD9D0FD`, the board is still
+running an older image and the flash did not take — regardless of what
+words [4,5] say.
+
+Already re-verified off-board on the third image: hosted x86-64 **21/21**,
+NOSTD host **5/5**, QEMU mps3-an547 / Cortex-M55 **4/4** (15 band
+decisions walked, unchanged as expected for an unchanged map).
