@@ -1,0 +1,13 @@
+[package]
+name = "h2-fill-gov-nostd"
+version = "0.1.0"
+edition = "2021"
+license = "PROPRIETARY"
+authors = ["LUXERON"]
+description = "[QCEOM RL] Hydrogen fast-fill governor NOSTD twin - fail-closed QCH2 fill-map image validator and dispenser-side executor for 700 bar H2 station controllers. Pure core, zero heap, zero floats on the device path."
+
+[dependencies]
+
+[profile.release]
+lto = true
+codegen-units = 1
