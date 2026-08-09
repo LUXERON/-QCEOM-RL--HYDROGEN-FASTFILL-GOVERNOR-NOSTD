@@ -77,3 +77,34 @@ claim for this harness. Until then the README claims two targets, not three.
   to bisect that cheaply if it recurs.
 - **Always check the mailbox magic before trusting any other word** — AXISRAM
   retains the previous run's data across loads.
+
+---
+
+## MEASURED RESULT — physical STM32N6570-DK, 2026-08-09
+
+Run by the lead developer on the board (the build agent staged the
+binary but did not touch the hardware).
+
+```
+0x34178000 : 46324851 00000002 00000004 00000000
+0x34178010 : 4324380D A0954AB0 0CD9D0FD 00103F1E
+0x34178020 : 0018C6DB 000D465E 000B31E4 00000004
+0x34178030 : 00000006 0000000F
+```
+
+| Word | Meaning | Value |
+|---|---|---|
+| [0] | magic `QH2F` | 0x46324851 ✓ |
+| [1] | status | **2 = all passed** |
+| [2] | passed | **4** |
+| [3] | failed | **0** |
+| [4,5] | map fingerprint | **0xA0954AB04324380D** |
+| [6] | image CRC32 | 0x0CD9D0FD |
+| [7..10] | per-test DWT cycles | 1,064,222 · 1,623,771 · 869,470 · 733,668 |
+
+**Triple-target bit-determinism closed.** The map fingerprint
+`0xa0954ab04324380d` is identical on x86-64, QEMU mps3-an547 and
+physical STM32N657 silicon. Total executor work ≈ 4.29 M cycles
+≈ **67 ms @ 64 MHz** for all four tests including the fail-closed
+refusals. Unlike QEMU (whose mps3-an547 model does not tick DWT),
+these are real cycle counts.

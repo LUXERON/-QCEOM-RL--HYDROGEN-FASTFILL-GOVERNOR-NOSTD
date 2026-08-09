@@ -98,3 +98,13 @@ qemu-m55-harness/src/golden.rs  the hosted-emitted golden vector
 qemu-m55-harness/memory-*.x     QEMU vs physical-board memory maps
 docs/N657-RUN.md                the staged physical-run sequence
 ```
+
+
+## Physical silicon — triple-target closed
+
+Measured on an STM32N6570-DK on 2026-08-09: **4 passed, 0 failed**
+(mailbox `QH2F`, status 2). The map fingerprint
+`0xa0954ab04324380d` is identical on x86-64, QEMU mps3-an547 and
+physical STM32N657. Total ≈ 4.29 M cycles ≈ **67 ms @ 64 MHz**,
+including every fail-closed refusal. Full mailbox decode:
+[docs/N657-RUN.md](docs/N657-RUN.md) in the NOSTD repo.
