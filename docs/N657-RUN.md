@@ -137,3 +137,28 @@ physical STM32N657 silicon. Total executor work ≈ 4.29 M cycles
 ≈ **67 ms @ 64 MHz** for all four tests including the fail-closed
 refusals. Unlike QEMU (whose mps3-an547 model does not tick DWT),
 these are real cycle counts.
+
+
+---
+
+## RE-VERIFIED ON SILICON AFTER REMEDIATION — 2026-08-09
+
+The gate-evaluability audit produced code changes to this harness, so
+the image above was superseded and the board was re-run. Measured:
+
+| Field | Expected | Measured |
+|---|---|---|
+| magic `QH2F` | — | ✓ |
+| status | 2 = all passed | ✓ |
+| passed / failed | 4 / 0 | ✓ |
+| table fingerprint | `0xA0954AB04324380D` | ✓ |
+| image CRC32 | `0xE3E6A21E` | ✓ |
+
+fingerprint unchanged; params hash and CRC changed (codec coverage).
+
+**Why the CRC is the word that matters on this re-run.** Five of the six
+remediated harnesses changed only their header hash, not their solved
+map — so the table fingerprint is identical before and after, and a
+board still holding the *old* image would report a correct fingerprint
+and look like a pass. The image CRC32 is the field that distinguishes
+them, and it was checked on every one.
