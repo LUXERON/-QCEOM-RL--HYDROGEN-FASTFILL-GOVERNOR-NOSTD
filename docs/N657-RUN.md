@@ -225,3 +225,23 @@ words [4,5] say.
 Already re-verified off-board on the third image: hosted x86-64 **21/21**,
 NOSTD host **5/5**, QEMU mps3-an547 / Cortex-M55 **4/4** (15 band
 decisions walked, unchanged as expected for an unchanged map).
+
+
+---
+
+## RE-VERIFIED ON SILICON — omission-guard hash coverage, 2026-08-09
+
+| Field | Expected | Measured |
+|---|---|---|
+| magic `QH2F` | — | ✓ |
+| status | 2 | ✓ |
+| passed / failed | 4 / 0 | ✓ |
+| fingerprint | `0xA0954AB04324380D` (**unchanged**) | ✓ |
+| **CRC32** | **`0x2984F799`** (was `0xE3E6A21E`) | ✓ |
+
+The map is unchanged — only the params hash grew — so **the CRC is the
+only freshness proof on this run.**
+
+A source-scanning omission guard (`every_declared_model_constant_is_hashed`)
+now fails the build if any constant on the gate path is left unhashed.
+It flagged: `R_U`, `M_H2`, `CV0`, `CP0`, `P_NWP`, `T_REF_SOC_K`, `RESIDUAL_SOC`, `DT_S` — of which `R_U`/`P_NWP`/`T_REF_SOC_K` jointly define `n_full()`, i.e. **what "100% SoC" means**. Revising any of them moves the fill target itself while changing no gate and no lattice.
