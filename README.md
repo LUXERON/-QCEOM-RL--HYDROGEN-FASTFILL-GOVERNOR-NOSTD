@@ -33,10 +33,22 @@ new image.** That is the patent posture (see the hosted repo's
 Acceptance chain before a single gram is dispensed (fail-closed, ordered):
 magic → format version → CRC32 → map fingerprint → **provisioned tank-hash
 comparison**. The tank hash covers geometry, conductances, wall heat
-capacity, ambient, *and the full rulebook* — the ceilings, both tier
-ladders, and the declared objective weights. A map solved for a different
-tank, or under a revised rulebook, is refused mechanically
+capacity, ambient, *the full rulebook* — the ceilings, both tier
+ladders, and the declared objective weights — *and, since 2026-08-09,
+the **codec***: the state band lattice (`GAS_BASE_C`, `GAS_BAND_C`,
+`LIN_BASE_C`, `LIN_BAND_C`) as well as the band counts. The image is a
+bare action-index byte per state, so re-basing a band grid at constant
+band count would otherwise yield a same-length, same-hash image that
+misindexes every lookup. A map solved for a different tank, under a
+revised rulebook, or against a different lattice is refused mechanically
 (`ImageError::StaleProvenance`).
+
+> **Image superseded 2026-08-09**: tank hash `0xB4A7CF3CCB6D74A4` →
+> `0x0723DA1CCDC8BB94`, image CRC32 `0x0CD9D0FD` → `0xE3E6A21E`. The map
+> fingerprint `0xA0954AB04324380D` is **unchanged** — only the
+> provenance binding moved. Host and QEMU rungs re-run on the new image;
+> the physical-silicon section below pertains to the previous one and
+> the board must be re-flashed.
 
 ## Measured verification ladder
 
@@ -100,7 +112,12 @@ docs/N657-RUN.md                the staged physical-run sequence
 ```
 
 
-## Physical silicon — triple-target closed
+## Physical silicon — triple-target closed *(previous image)*
+
+> Real and retained; it measured the image whose tank hash was
+> `0xB4A7CF3CCB6D74A4`. The map fingerprint it reports is still the
+> shipped one, but the provenance header changed — re-flash and re-run
+> to close the claim for the current image.
 
 Measured on an STM32N6570-DK on 2026-08-09: **4 passed, 0 failed**
 (mailbox `QH2F`, status 2). The map fingerprint

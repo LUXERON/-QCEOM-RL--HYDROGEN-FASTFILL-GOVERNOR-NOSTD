@@ -1,9 +1,31 @@
 # STM32N657 Physical Run — H₂ Fast-Fill Map Executor
 
-**Status: BUILT AND STAGED, NOT YET EXECUTED ON SILICON.** The board is a
-shared resource and board access is coordinated by the lead dev, so this
-harness stops at the built artifact. Everything below is ready to run
-verbatim; nothing in this file is a claim about measured silicon.
+**Status: REBUILT AND STAGED (second image), NOT YET EXECUTED ON
+SILICON.** The board is a shared resource and board access is
+coordinated by the lead dev, so this harness stops at the built
+artifact. Everything below is ready to run verbatim.
+
+> **The measured-result section at the bottom of this file is
+> SUPERSEDED.** A 2026-08-09 estate-wide audit found that the params
+> hash guarded the physics but not the **codec**: the image is a bare
+> action-index byte per state, so re-basing a band grid at constant band
+> count would produce a same-length image with an unchanged hash that
+> misindexes every lookup. This harness already hashed its action tiers
+> — the best-covered case in the estate — but not the state band
+> lattice. `GAS_BASE_C`, `GAS_BAND_C`, `LIN_BASE_C`, `LIN_BAND_C` and
+> the band counts are now hashed too.
+>
+> | Field | Previous image | Current image |
+> |---|---|---|
+> | Tank hash (header offset 16) | `0xB4A7CF3CCB6D74A4` | **`0x0723DA1CCDC8BB94`** |
+> | Stale-hash demo constant | `0xAF1C0A6A672DB2E8` | **`0x007E72F5B2948CE3`** |
+> | Image CRC32 (mailbox word [6]) | `0x0CD9D0FD` | **`0xE3E6A21E`** |
+> | Map fingerprint (words [4,5]) | `0xA0954AB04324380D` | **unchanged** |
+>
+> The solved map did not change — only its provenance binding, and
+> therefore the image header and CRC. Host parity 5/5 and QEMU
+> mps3-an547 4/4 have been re-run on the new image. **The lead developer
+> must re-flash `mailbox_burn.bin` and re-run.**
 
 ## What is staged
 
@@ -51,7 +73,7 @@ STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -q -r32 0x34178000 56
 | [3] | `+0x0C` | tests failed | **0** |
 | [4] | `+0x10` | map fingerprint, low word | `0x4324380D` |
 | [5] | `+0x14` | map fingerprint, high word | `0xA0954AB0` |
-| [6] | `+0x18` | image CRC32 recomputed on silicon | `0x0CD9D0FD` |
+| [6] | `+0x18` | image CRC32 recomputed on silicon | `0xE3E6A21E` |
 | [7] | `+0x1C` | `burn_and_accept` DWT cycles | — |
 | [8] | `+0x20` | `refusals` DWT cycles | — |
 | [9] | `+0x24` | `lookup_surface` DWT cycles | — |
@@ -80,7 +102,14 @@ claim for this harness. Until then the README claims two targets, not three.
 
 ---
 
-## MEASURED RESULT — physical STM32N6570-DK, 2026-08-09
+## MEASURED RESULT — physical STM32N6570-DK, 2026-08-09 — **SUPERSEDED**
+
+> **Pertains to the PREVIOUS image** (tank hash `0xB4A7CF3CCB6D74A4`,
+> image CRC32 `0x0CD9D0FD`). Real, kept in full, and no longer a
+> validation of what is in `mailbox_burn.bin`. The map fingerprint is
+> unchanged, so words [4,5] still read `0xA0954AB04324380D`; word [6]
+> and the header hash are what moved. Append a fresh measured section
+> below this one after re-running.
 
 Run by the lead developer on the board (the build agent staged the
 binary but did not touch the hardware).
